@@ -35,7 +35,7 @@ def main(argv):
 	entries = readFile.strip().split('\n')
 
 	for entry in entries:
-		print "entry: " + str(entry)
+		print "entry: " + str(entry)  + "."
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
