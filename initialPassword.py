@@ -17,7 +17,11 @@ def main(argv):
 		sys.exit(2)
 	for opt, arg in opts: 
 		if opt == '-H':
-			print 'initialPassword.py is used to gather intial password information for a list of users.\nUsage: python initialPassword.py -i <inputFile> -u <username> -p <password>'
+			print 'initialPassword.py is used to gather intial password information for a list of users.' \ 
+			'\nUsage: python initialPassword.py -i <inputFile> -u <username> -p <password>' \
+			'\n-i	--inputFile		.txt file with list of users to process. Delineated by linebreaks.' \
+			'\n-u 	--username 		The login username for OpenIDM to use for the API call.' \
+			'\n-p 	--password 		The password for the OpenIDM username.\n'
 			sys.exit()
 		elif opt in ('-i', '--inputFile'): 
 			inputFile = arg
@@ -35,7 +39,9 @@ def main(argv):
 	entries = readFile.strip().split('\n')
 
 	for entry in entries:
-		print "entry: " + str(entry)  + ". ."
+		print "entry: " + str(entry)
+
+
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
