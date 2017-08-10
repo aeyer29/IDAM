@@ -52,11 +52,11 @@ def main(argv):
 		#'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
 
 		#print curlCommand
-		#subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
+		output=subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
 		
-		output = subprocess.check_output(['date -u'])
-		outList=output.strip().split('\n')
-		print outList
+		#output = subprocess.check_output(['date', '-u'])
+		#outList=output.strip().split('\n')
+		print output
 
 
 if __name__ == "__main__":
