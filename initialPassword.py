@@ -6,7 +6,7 @@
 #    username of OpenIDM user to call API with
 #    password of OpenIDM user
 
-import json, subprocess, getopt, sys, os
+import json, subprocess, getopt, sys, os, requests
 
 def main(argv): 
 	inputFile = ''
@@ -44,7 +44,7 @@ def main(argv):
 		#print "entry: " + str(entry)
 		userNameArg='-H \"X-OpenIDM-Username:' + str(openidmUsername) + '\"'
 		passwordArg='-H \"X-OpenIDM-Password:' + str(openidmPassword) + '\"'
-		requestArg='--request GET'
+		requestArg='-X GET'
 		urlArg='https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22'+str(entry)+'%22&_fields=userName,initialPasswordView'
 		#curlCommand='curl -H \"X-OpenIDM-Username:' + str(openidmUsername) + '\" '\
 		#'-H \"X-OpenIDM-Password:' + str(openidmPassword) + '\" '\
@@ -52,11 +52,13 @@ def main(argv):
 		#'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
 
 		#print curlCommand
-		output=subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
-		
+		#output=subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
+		headerArgs={'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
+		curlReq=requests.get(url,headers=headerArgs)
+
 		#output = subprocess.check_output(['date', '-u'])
 		#outList=output.strip().split('\n')
-		print output
+		print curlReq.text
 
 
 if __name__ == "__main__":
