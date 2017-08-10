@@ -55,7 +55,7 @@ def main(argv):
 		#subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
 		
 		output = subprocess.check_output(['date','-u'])
-		#print output
+		print output
 
 
 if __name__ == "__main__":
