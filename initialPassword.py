@@ -6,7 +6,7 @@
 #    username of OpenIDM user to call API with
 #    password of OpenIDM user
 
-import json, subprocess, getopt, sys
+import json, subprocess, getopt, sys, os
 
 def main(argv): 
 	inputFile = ''
@@ -53,8 +53,9 @@ def main(argv):
 
 		#print curlCommand
 		#subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
+		
 		output = subprocess.check_output(['date','-u'])
-		print output
+		#print output
 
 
 if __name__ == "__main__":
