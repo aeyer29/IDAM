@@ -42,7 +42,7 @@ def main(argv):
 		#print "entry: " + str(entry)
 		curlCommand='curl -H \"X-OpenIDM-Username:' + str(openidmUsername) + '\" '\
 		'-H \"X-OpenIDM-Password:' + str(openidmPassword) + '\" '\
-		'--request GET '
+		'--request GET ' \
 		'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
 
 		print curlCommand
