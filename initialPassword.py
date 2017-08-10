@@ -54,7 +54,7 @@ def main(argv):
 		#print curlCommand
 		#subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
 		
-		output = subprocess.call(['date','-u'])
+		output = subprocess.check_output(['date -u'])
 		outList=output.strip().split('\n')
 		print outList
 
