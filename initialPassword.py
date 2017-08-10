@@ -1,3 +1,5 @@
+#!/usr/bin/python2.7
+
 #Gather initialPasswordView details for list of users. 
 #Necessary inputs: 
 #    list of users, delineated by newline (\n)
@@ -40,14 +42,19 @@ def main(argv):
 
 	for entry in entries:
 		#print "entry: " + str(entry)
-		curlCommand='curl -H \"X-OpenIDM-Username:' + str(openidmUsername) + '\" '\
-		'-H \"X-OpenIDM-Password:' + str(openidmPassword) + '\" '\
-		'--request GET ' \
-		'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
+		userNameArg='-H \"X-OpenIDM-Username:' + str(openidmUsername) + '\"'
+		passwordArg='-H \"X-OpenIDM-Password:' + str(openidmPassword) + '\"'
+		requestArg='--request GET'
+		urlArg='https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22'+str(entry)+'%22&_fields=userName,initialPasswordView'
+		#curlCommand='curl -H \"X-OpenIDM-Username:' + str(openidmUsername) + '\" '\
+		#'-H \"X-OpenIDM-Password:' + str(openidmPassword) + '\" '\
+		#'--request GET ' \
+		#'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
 
-		print curlCommand
-		#subprocess.call()
-
+		#print curlCommand
+		#subprocess.check_output(['curl',userNameArg,passwordArg,requestArg,urlArg])
+		output = subprocess.check_output(['date','-u'])
+		print output
 
 
 if __name__ == "__main__":
