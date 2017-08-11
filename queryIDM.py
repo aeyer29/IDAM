@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 
-#Gather initialPasswordView details for list of users. 
+#Gather details for list of users. 
 #Necessary inputs: 
 #    list of users, delineated by newline (\n)
 #    output file
@@ -22,21 +22,21 @@ def main(argv):
 		#Define arguments for command
 		opts, args = getopt.getopt(argv, "Hi:o:u:p:",["inputFile=", "outputFile=", "username=", "password="])
 	except getopt.GetoptError: 
-		print 'initialPassword.py -i <inputFile> -o <outputFile> -u <username> -p <password>'
+		print 'queryIDM -i <inputFile> -o <outputFile> -u <username> -p <password>'
 		sys.exit(2)
 	for opt, arg in opts: 
 		#Read args from the command
 		if opt == '-H': 
-			print '\ninitialPassword.py is used to gather intial password information for a list of users.' \
-			'\nUsage: python initialPassword.py -i <inputFile> -u <username> -p <password>' \
+			print '\nqueryIDM is used to gather intial password information for a list of users.' \
+			'\nUsage: python queryIDM -i <inputFile> -u <username> -p <password>' \
 			'\n-i   --inputFile             .txt file with list of users to process. Delineated by newlines.' \
 			'\n-o   --outputFile            Name of file to output. Output is of the format: '\
-			'\n                             "username\tinitial"'\
+			'\n                             "username\tmail"'\
 			'\n                             (tab separated), with each entry on a new line.' \
 			'\n-u   --username              The login username for OpenIDM to use for the API call.' \
 			'\n-p   --password              The password for the OpenIDM username.'\
 			'\n                             Enter "-" in place of password to be prompted. For example:'\
-			'\n                             initialPassword.py -i inputFile.txt -o outputFile.txt -u userName -p -'
+			'\n                             queryIDM -i inputFile.txt -o outputFile.txt -u userName -p -'
 
 			#exit if -H is called, as this is just to print a help command
 			sys.exit()
