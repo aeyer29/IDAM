@@ -3,11 +3,13 @@
 #Gather initialPasswordView details for list of users. 
 #Necessary inputs: 
 #    list of users, delineated by newline (\n)
+#    output file
 #    username of OpenIDM user to call API with
 #    password of OpenIDM user
 
 import json
 import getopt
+import getpass
 import sys
 import requests
 
@@ -43,7 +45,10 @@ def main(argv):
 		elif opt in ('-u', '--username'):
 			openidmUsername = arg
 		elif opt in ('-p', '--password'):
-			openidmPassword = arg
+			if arg == '-':
+				openidmPassword = getpass.getpass("Enter your password:")
+			else:
+				openidmPassword = arg
 
 	with open(str(inputFile), 'r') as openFile:
 		#read the input list
@@ -56,22 +61,20 @@ def main(argv):
 	for entry in entries:
 		#For each username in the list, send the following command. 
 
-		urlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
-
+		urlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,mail'
 		headerArgs = {'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
 		curlReq = requests.get(urlArg, headers = headerArgs)
 
 		#json.loads will return a dict object, so jsonObj is a dictionary of the format: 
-		#{"result":[{"_id":"#","_rev":"#","userName":"string","initialPasswordView":"string"}],
+		#{"result":[{"_id":"#","_rev":"#","userName":"string","mail":"string"}],
 		#	"resultCount":#,"pagedResultsCookie":obj,"totalpagedResultsPolicy":"policy","totalPagedResults":#,"remainingPagedResults":#}
 		jsonObj = json.loads(curlReq.text)
 
 		#The returnedResult is a dictionary. Note that we only use the first result here from the "result" entry in the dictionary.
 		returnedResult = jsonObj["result"][0]
 		returnedUsername = returnedResult["userName"]
-		returnedInitial = returnedResult["initialPasswordView"]
-		addString = returnedUsername + '\t' + returnedInitial + '\n'
-
+		returnedMail = returnedResult["mail"]
+		addString = returnedUsername + '\t' + returnedMail + '\n'
 		outString += addString
 
 	outString = outString.strip()
@@ -80,7 +83,5 @@ def main(argv):
 		openOutputFile.write(outString)
 
 
-
 if __name__ == "__main__":
 	main(sys.argv[1:])
-
