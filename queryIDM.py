@@ -35,8 +35,8 @@ def main(argv):
 			'\n                             (tab separated), with each entry on a new line.' \
 			'\n-u   --username              The login username for OpenIDM to use for the API call.' \
 			'\n-p   --password              The password for the OpenIDM username.'\
-			'\n 							Enter "-" in place of password to be prompted. For example:'\
-			'\n 							initialPassword.py -i inputFile.txt -o outputFile.txt -u userName -p -'
+			'\n                             Enter "-" in place of password to be prompted. For example:'\
+			'\n                             initialPassword.py -i inputFile.txt -o outputFile.txt -u userName -p -'
 
 			#exit if -H is called, as this is just to print a help command
 			sys.exit()
