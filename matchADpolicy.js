@@ -42,7 +42,7 @@ function matchAD(fullObject, value, params, property){
 	// actualMatches keeps track of the number of regexes the input value matches. 
 	for (i = 0; i < regArray.length; i++){
 		var currentReg = regArray[i];
-		var matchesCurrentReg = inputPass.test(currentReg);
+		var matchesCurrentReg = currentReg.test(inputPass);
 
 		if (matchesCurrentReg){
 			actualMatches += 1;
