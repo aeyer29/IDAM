@@ -11,6 +11,21 @@ import getopt
 import sys
 import requests
 
+def parseInput(inFile):
+	#Output is list of users, based on input where each line has a username as the first word
+	with open(str(inFile), 'r') as openFile:
+		readFile = openFile.read().strip()
+
+	byLines = readFile.split('\n')
+	userList = []
+	for line in byLines:
+		splitByWhitespace = line.split()
+		user = [splitByWhitespace[0]]
+		userList += user
+
+	return userList
+
+
 def main(argv): 
 	inputFile = ''
 	outputFile = ''
@@ -45,11 +60,13 @@ def main(argv):
 		elif opt in ('-p', '--password'):
 			openidmPassword = arg
 
-	with open(str(inputFile), 'r') as openFile:
-		#read the input list
-		readFile = openFile.read()
+	#with open(str(inputFile), 'r') as openFile:
+	#	#read the input list
+	#	readFile = openFile.read()
 
-	entries = readFile.strip().split('\n')
+	#entries = readFile.strip().split('\n')
+
+	entries = parseInput(str(inputFile))
 
 	outString = ""
 
