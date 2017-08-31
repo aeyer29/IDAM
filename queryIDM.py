@@ -25,7 +25,7 @@ def main(argv):
 		print 'queryIDM -i <inputFile> -o <outputFile> -u <username> -p <password>'
 		sys.exit(2)
 	for opt, arg in opts: 
-		#Read args from the command
+		#Read args from the command given
 		if opt == '-H': 
 			print '\nqueryIDM is used to gather intial password information for a list of users.' \
 			'\nUsage: python queryIDM -i <inputFile> -u <username> -p <password>' \
