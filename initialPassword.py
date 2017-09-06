@@ -46,7 +46,7 @@ def main(argv):
 			'\nUsage: ./initialPassword.py -i <inputFile> -u <username> -p <password>' \
 			'\n-i   --inputFile             .txt file with list of users to process. Delineated by newlines.' \
 			'\n-o   --outputFile            Name of file to output. Output is of the format: '\
-			'\n                             "username\tinitial" (tab separated)'\
+			'\n                             "username\tinitial\tfirst last" (tab separated)'\
 			'\n                             (tab separated), with each entry on a new line.' \
 			'\n-u   --username              The login username for OpenIDM to use for the API call.' \
 			'\n-p   --password              The password for the OpenIDM username.'\
@@ -75,7 +75,7 @@ def main(argv):
 	for entry in entries:
 		#For each username in the list, send the following command. 
 
-		urlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView'
+		urlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView,givenName,sn'
 
 		headerArgs = {'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
 		curlReq = requests.get(urlArg, headers = headerArgs)
@@ -89,7 +89,9 @@ def main(argv):
 		returnedResult = jsonObj["result"][0]
 		returnedUsername = returnedResult["userName"]
 		returnedInitial = returnedResult["initialPasswordView"]
-		addString = returnedUsername + '\t' + returnedInitial + '\n'
+		returnedFirst = returnedResult["givenName"]
+		returnedLast = returnedResult["sn"]
+		addString = returnedUsername + '\t' + returnedInitial + '\t' + returnedFirst + ' ' + returnedLast + '\n'
 
 		outString += addString
 
@@ -102,4 +104,3 @@ def main(argv):
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
-
