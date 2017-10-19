@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 
-#Gather initialPasswordView details for list of users. 
+#Update details for list of users. 
 #Necessary inputs: 
 #    list of users, delineated by newline (\n)
 #    output file
@@ -12,17 +12,18 @@ import getopt
 import getpass
 import sys
 import requests
+from urllib import quote as quoteURL
 
 def parseInput(inFile):
-	#Output is list of users, based on input where each line has a username as the first word
+	#Output is list of users, based on input where each line has a username as the second word, delimited by a comma
 	with open(str(inFile), 'r') as openFile:
 		readFile = openFile.read().strip()
 
-	byLines = readFile.split('\n')
+	byLines = readFile.split('\n')[1:]
 	userList = []
 	for line in byLines:
-		splitByWhitespace = line.split()
-		user = [splitByWhitespace[0]]
+		splitByWhitespace = line.split(",")
+		user = [splitByWhitespace[1]].strip()
 		userList += user
 
 	return userList
@@ -37,14 +38,14 @@ def main(argv):
 		#Define arguments for command
 		opts, args = getopt.getopt(argv, "Hi:o:u:p:",["inputFile=", "outputFile=", "username=", "password="])
 	except getopt.GetoptError: 
-		print 'initialPassword.py -i <inputFile> -o <outputFile> -u <username> -p <password>'
+		print 'updateUsers.py -i <inputFile> -o <outputFile> -u <username> -p <password>'
 		sys.exit(2)
 	for opt, arg in opts: 
 		#Read args from the command
 		if opt == '-H': 
-			print '\ninitialPassword.py is used to gather intial password information for a list of users.' \
-			'\nUsage: ./initialPassword.py -i <inputFile> -u <username> -p <password>' \
-			'\n-i   --inputFile             .txt file with list of users to process. Delineated by newlines.' \
+			print '\nupdateUsers.py is used to update information for a list of users.' \
+			'\nUsage: ./updateUsers.py -i <inputFile> -u <username> -p <password>' \
+			'\n-i   --inputFile             file with list of users to process. Delineated by newlines.' \
 			'\n-o   --outputFile            Name of file to output. Output is of the format: '\
 			'\n                             "first last\tusername\tinitial" (tab separated)'\
 			'\n                             (tab separated), with each entry on a new line.' \
@@ -67,36 +68,42 @@ def main(argv):
 			else:
 				openidmPassword = arg
 
-
-	entries = parseInput(str(inputFile))
+	#use list(set()) to ensure each entry is distinct 
+	entries = list(set(parseInput(str(inputFile))))
 
 	outString = ""
 
 	for entry in entries:
 		#For each username in the list, send the following command. 
+		#use quoteURL to encode the string 
+		getUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + quoteURL(str(entry)) + '%22&_fields=userName,_id,userType'
 
-		urlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + str(entry) + '%22&_fields=userName,initialPasswordView,givenName,sn'
-
-		headerArgs = {'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
-		curlReq = requests.get(urlArg, headers = headerArgs)
+		getHeaderArgs = {'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
+		getCurlReq = requests.get(getUrlArg, headers = getHeaderArgs)
 
 		#json.loads will return a dict object, so jsonObj is a dictionary of the format: 
 		#{"result":[{"_id":"#","_rev":"#","userName":"string","initialPasswordView":"string"}],
 		#	"resultCount":#,"pagedResultsCookie":obj,"totalpagedResultsPolicy":"policy","totalPagedResults":#,"remainingPagedResults":#}
-		jsonObj = json.loads(curlReq.text)
+		jsonObj = json.loads(getCurlReq.text)
 
 		#The returnedResult is a dictionary. Note that we only use the first result here from the "result" entry in the dictionary.
 		returnedResult = jsonObj["result"][0]
 		returnedUsername = returnedResult["userName"]
-		returnedInitial = returnedResult["initialPasswordView"]
-		returnedFirst = returnedResult["givenName"]
-		returnedLast = returnedResult["sn"]
-		addString = returnedFirst + ' ' + returnedLast + '\t' + returnedUsername + '\t' + returnedInitial + '\n'
+		returnedUserType = returnedResult["userType"]
+		returnedID = returnedResult["_id"]
 
-		outString += addString
+		patchUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' + returnedID
+		patchPassword = {"operation":"replace", "field":"password", "value":"VlvHybr1steam!"}
+		patchTerms = {"operation":"replace","field":"acceptTermsandConditions","value":"true"}
+		patchHeaders = getHeaderArgs
+		patchHeaders.update({'Content-Type':'application/json'})
+
+		patchCurlReq = requests.patch(patchUrlArg, json = [patchPassword, patchTerms], headers = patchHeaders)
+
+		addToOutput = 'dn: uid='+str(returnedUsername)+',ou='+str(returnedUserType)+'s,ou=People,dc=valvoline,dc=com\nchangetype: modify\nreplace: pwdReset\npwdReset: false\n\n'
+		outString += addToOutput
 
 	outString = outString.strip()
-
 	with open(str(outputFile),'w') as openOutputFile:
 		openOutputFile.write(outString)
 

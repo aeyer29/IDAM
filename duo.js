@@ -1,0 +1,1 @@
+var userTypes = "[employee, contractor]";
