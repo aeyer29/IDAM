@@ -92,6 +92,8 @@ def main(argv):
 		returnedUserType = returnedResult["userType"]
 		returnedID = returnedResult["_id"]
 
+		print "    found user: " + str(returnedUsername)
+
 		patchUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' + returnedID
 		patchPassword = {"operation":"replace", "field":"password", "value":"VlvHybr1steam!"}
 		patchTerms = {"operation":"replace","field":"acceptTermsandConditions","value":"true"}
