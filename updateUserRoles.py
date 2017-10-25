@@ -16,10 +16,8 @@ from urllib import quote as quoteURL
 
 def parseInput(inFile, position):
 	#Output is list of users, based on input where each line has a username as the second word, delimited by a comma
-	with open(str(inFile), 'r') as openFile:
-		readFile = openFile.read().strip()
 
-	byLines = readFile.split('\n')[1:]
+	byLines = [parseByLine(inFile)]
 	userList = []
 	for line in byLines:
 		splitByWhitespace = line.split(",")
@@ -27,6 +25,14 @@ def parseInput(inFile, position):
 		userList += user
 
 	return userList
+
+def parseByLine(inFile):
+	#Output is a list of lines
+	with open(str(inFile), 'r') as openFile:
+		readFile = openFile.read().strip()
+
+	byLines = readFile.split('\n')[1:]
+	return byLines
 
 def debug(debugOn, statement):
 	#Use this for debug statements. 
@@ -99,7 +105,9 @@ def main(argv):
 
 	#use list(set()) to ensure each entry is distinct 
 	#entries are UUIDs (frID)
-	entries = list(set(parseInput(str(inputFile), 13)))
+
+	entryList = parseByLine(str(inputFile))
+	#entries = list(set(parseInput(str(inputFile), 13)))
 
 	roleListManager = ["PRDFND", "VLVUAD", "INSGHT", "PROPRO", "VLVPRF", "VLVMON", "SOLUTN", "VIWCAS", "VIWORD", "PRDCTL"]
 	roleListStaff = ["PRDFND", "VLVUUR"]
@@ -113,7 +121,18 @@ def main(argv):
 	#errorUsers is users for which an error was caught and the user was skipped 
 	errorUsers = []
 
-	for entry in entries:
+	for line in entryList:
+		splitByWhitespace = line.split(',')
+		entry = splitByWhitespace[13].strip()
+		entryLevel = splitByWhitespace[12].strip().lower()
+		rolesToAdd = []
+
+		if entryLevel in ['owner', 'store manager', 'area manager']:
+			rolesToAdd = rolesByIdManager
+		else:
+			rolesToAdd = rolesByIdStaff 
+
+
 		debug(toDebug, "querying for entry: " + str(entry))
 		#For each username in the list, send the following command. 
 		#use quoteURL to encode the string 
