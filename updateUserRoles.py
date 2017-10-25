@@ -98,7 +98,8 @@ def main(argv):
 
 
 	#use list(set()) to ensure each entry is distinct 
-	entries = list(set(parseInput(str(inputFile), 1)))
+	#entries are UUIDs (frID)
+	entries = list(set(parseInput(str(inputFile), 13)))
 
 	roleListManager = ["PRDFND", "VLVUAD", "INSGHT", "PROPRO", "VLVPRF", "VLVMON", "SOLUTN", "VIWCAS", "VIWORD", "PRDCTL"]
 	roleListStaff = ["PRDFND", "VLVUUR"]
@@ -116,7 +117,7 @@ def main(argv):
 		debug(toDebug, "querying for entry: " + str(entry))
 		#For each username in the list, send the following command. 
 		#use quoteURL to encode the string 
-		getUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user?_queryFilter=userName+eq+%22' + quoteURL(str(entry)) + '%22&_fields=username,_id'
+		getUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry)
 
 		getHeaderArgs = {'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
 		getCurlReq = requests.get(getUrlArg, headers = getHeaderArgs)
@@ -138,12 +139,11 @@ def main(argv):
 		#The returnedResult is a dictionary. Note that we only use the first result here from the "result" entry in the dictionary.
 		returnedResult = jsonObj["result"][0]
 		returnedUsername = str(returnedResult["userName"])
-		returnedID = str(returnedResult["_id"])
 
 		debug(toDebug, "    found user: " + str(returnedUsername))
 
 		#Get the current roles for the user 
-		getRolesUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + returnedID + '/roles?_queryFilter=true'
+		getRolesUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) + '/roles?_queryFilter=true'
 		getRolesReq = requests.get(getRolesUrl, headers = getHeaderArgs)
 		rolesJson = json.loads(getRolesReq.text)
 
