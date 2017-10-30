@@ -41,16 +41,19 @@ def debug(debugOn, statement):
 	if debugOn:
 		print str(statement)
 
-def getRolesById(roleList):
+def getRolesById(roleList, getHeaderArgs):
+	#Outputs a dictionary of roleName: roleId 
+	#for example: {"PRDFND" : "abcde-1234-4fgdssa-354321"}
 	rolesById = {}
 	for role in roleList:
-		getRoleIdUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/role?_queryFilter=name+eq+' + str(role).upper()
+		getRoleIdUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/role?_queryFilter=name+eq+%22' + str(role).upper()+'%22'
 		getRoleIdReq = requests.get(getRoleIdUrlArg, headers = getHeaderArgs)
 		roleResultJson = json.loads(getRoleIdReq.text)
+		returnedResult = roleResultJson["result"][0]
 
 		if roleResultJson["resultCount"] > 0:
-			role = rolesJson["result"][0]
-			roleId = role["_id"]
+			resultingRole = roleResultJson["result"][0]
+			roleId = resultingRole["_id"]
 			rolesById.update({str(role) : str(roleId)})
 
 		else:
@@ -62,13 +65,14 @@ def getRolesById(roleList):
 
 def main(argv): 
 	inputFile = ''
-	outputFile = ''
+	outputFile = 'updateRoles_errors.txt'
 	openidmUsername = ''
 	openidmPassword = ''
 	toDebug = False
+	#opts, args = getopt.getopt(argv, "Hi:o:u:p:d",["inputFile=", "outputFile=", "username=", "password=", "debug"])
 	try: 
 		#Define arguments for command
-		opts, args = getopt.getopt(argv, "Hi:o:u:p:d",["inputFile=", "outputFile=", "username=", "password="])
+		opts, args = getopt.getopt(argv, "Hi:o:u:p:d",["inputFile=", "outputFile=", "username=", "password=", "debug"])
 	except getopt.GetoptError: 
 		print 'updateUsers.py -i <inputFile> -o <outputFile> -u <username> -p <password>'
 		sys.exit(2)
@@ -84,7 +88,9 @@ def main(argv):
 			'\n-u   --username              The login username for OpenIDM to use for the API call.' \
 			'\n-p   --password              The password for the OpenIDM username.'\
 			'\n                             Enter "-" in place of password to be prompted and hide the password. For example:'\
-			'\n                             initialPassword -i inputFile.txt -o outputFile.txt -u userName -p -'
+			'\n                             initialPassword -i inputFile.txt -o outputFile.txt -u userName -p -'\
+			'\n\nOPTIONAL'\
+			'\n-d   --debug                 Debugging option. Prints out more statements and errors. '
 
 			#exit if -H is called, as this is just to print a help command
 			sys.exit()
@@ -109,12 +115,13 @@ def main(argv):
 	entryList = parseByLine(str(inputFile))
 	#entries = list(set(parseInput(str(inputFile), 13)))
 
+	getHeaderArgs = {'X-OpenIDM-Username':str(openidmUsername), 'X-OpenIDM-Password':str(openidmPassword)}
+
 	roleListManager = ["PRDFND", "VLVUAD", "INSGHT", "PROPRO", "VLVPRF", "VLVMON", "SOLUTN", "VIWCAS", "VIWORD", "PRDCTL"]
 	roleListStaff = ["PRDFND", "VLVUUR"]
 
-	rolesByIdManager = getRolesById(roleListManager)
-	rolesByIdStaff = getRolesById(roleListStaff)
-
+	rolesByIdManager = getRolesById(roleListManager, getHeaderArgs)
+	rolesByIdStaff = getRolesById(roleListStaff, getHeaderArgs)
 
 	outString = ""
 
@@ -125,14 +132,17 @@ def main(argv):
 		splitByWhitespace = line.split(',')
 		entry = splitByWhitespace[13].strip()
 		entryLevel = splitByWhitespace[12].strip().lower()
-		rolesToAdd = []
-
+		rolesToAdd = {}
+		roleList = []
+		
 		if entryLevel in ['owner', 'store manager', 'area manager']:
 			rolesToAdd = rolesByIdManager
+			roleList = roleListManager
 		else:
-			rolesToAdd = rolesByIdStaff 
+			rolesToAdd = rolesByIdStaff
+			roleList = roleListStaff 
 
-
+		debug(toDebug, "role list for entry: " + str(roleList))
 		debug(toDebug, "querying for entry: " + str(entry))
 		#For each username in the list, send the following command. 
 		#use quoteURL to encode the string 
@@ -145,8 +155,7 @@ def main(argv):
 		#{"result":[{"_id":"#","_rev":"#","userName":"string","initialPasswordView":"string"}],
 		#	"resultCount":#,"pagedResultsCookie":obj,"totalpagedResultsPolicy":"policy","totalPagedResults":#,"remainingPagedResults":#}
 		jsonObj = json.loads(getCurlReq.text)
-
-		if !(len(jsonObj["result"])>0):
+		if not (str(getCurlReq.status_code) == '200'):
 			#Avoid out of index range errors, and if debugging on, record info from failure. 
 			errorUsers += [(entry, "did not find user")]
 			debug(toDebug, "    no results for entry: " + str(entry))
@@ -156,23 +165,21 @@ def main(argv):
 			continue
 
 		#The returnedResult is a dictionary. Note that we only use the first result here from the "result" entry in the dictionary.
-		returnedResult = jsonObj["result"][0]
-		returnedUsername = str(returnedResult["userName"])
+		returnedUsername = str(jsonObj["userName"])
 
 		debug(toDebug, "    found user: " + str(returnedUsername))
 
 		#Get the current roles for the user 
-		getRolesUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) + '/roles?_queryFilter=true'
+		getRolesUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) + '/roles?_queryFilter=true&_fields=_ref,_refProperties,name'
 		getRolesReq = requests.get(getRolesUrl, headers = getHeaderArgs)
 		rolesJson = json.loads(getRolesReq.text)
-
 
 		if (rolesJson["resultCount"]>0):
 			#If there are other roles that the user already has, add them to a list of roles to delete
 			for role in rolesJson["result"]:
 				roleName = str(role["name"])
 				roleInstanceID = str(role["_refProperties"]["_id"])
-				deleteRoleUrl = 'https://sso.qa.valvoline.com/openidm/managed/user' + returnedID + '/roles/' + roleInstanceID
+				deleteRoleUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) + '/roles/' + roleInstanceID
 				roleDeleteReq = requests.delete(deleteRoleUrl, headers = getHeaderArgs)
 
 		# May not need this section - look at status from roleDeleteReq instead to determine if successfully deleted? 
@@ -180,7 +187,7 @@ def main(argv):
 		rolesJsonAfter = json.loads(getRolesReqAfter.text)
 		if rolesJsonAfter["resultCount"] != 0:
 			errorUsers += [(entry, "not all roles deleted")]
-			rolesNotDeleted = [str(role["name"]) for role in rolesJsonAfter]
+			rolesNotDeleted = [str(role["name"]) for role in rolesJsonAfter["result"]]
 			debug(toDebug, "    not all roles for user " + returnedUsername + " were deleted!\n    roles not deleted: " + str(rolesNotDeleted) + '\n    skipping user ' + returnedUsername)
 			continue
 
@@ -191,12 +198,15 @@ def main(argv):
 		patchHeaders = getHeaderArgs
 		patchHeaders.update({'Content-Type':'application/json'})
 
-		addRoleUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' 
-		addRolesList = [{"operation" : "add", "field" : "/roles/-", "value" : {"_ref" : "/managed/role/" + str(rolesById[str(role)]) } } for role in roleList]
+		addRoleUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) 
+		addRolesList = [{"operation" : "add", "field" : "/roles/-", "value" : {"_ref" : "/managed/role/" + str(rolesToAdd[str(role)]) } } for role in roleList]
 		addRoleReq = requests.patch(addRoleUrlArg, json = addRolesList, headers = patchHeaders)
+		debug(toDebug, "    addRoleReq.status: " + str(addRoleReq.status_code))
 
+		debug(toDebug, "    added roles for user " + str(entry) + "\n")
 
-		debug(toDebug, "    added roles for user " + str(entry))
+	with open(str(outputFile), 'w') as openOutFile: 
+		openOutFile.write(str(errorUsers))
 
 
 
