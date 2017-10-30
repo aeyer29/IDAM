@@ -137,10 +137,10 @@ def main(argv):
 		
 		if entryLevel in ['owner', 'store manager', 'area manager']:
 			rolesToAdd = rolesByIdManager
-			roleList = roleListManager
+			roleList = list(roleListManager)
 		else:
 			rolesToAdd = rolesByIdStaff
-			roleList = roleListStaff 
+			roleList = list(roleListStaff)
 
 		debug(toDebug, "role list for entry: " + str(roleList))
 		debug(toDebug, "querying for entry: " + str(entry))
@@ -175,35 +175,39 @@ def main(argv):
 		rolesJson = json.loads(getRolesReq.text)
 
 		if (rolesJson["resultCount"]>0):
-			#If there are other roles that the user already has, add them to a list of roles to delete
+			#If there are other roles that the user does not need, delete them
+			#Also skip roles that the user needs, but already has
 			for role in rolesJson["result"]:
 				roleName = str(role["name"])
-				roleInstanceID = str(role["_refProperties"]["_id"])
-				deleteRoleUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) + '/roles/' + roleInstanceID
-				roleDeleteReq = requests.delete(deleteRoleUrl, headers = getHeaderArgs)
+				if roleName not in roleList: 
+					roleInstanceID = str(role["_refProperties"]["_id"])
+					deleteRoleUrl = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) + '/roles/' + roleInstanceID
+					roleDeleteReq = requests.delete(deleteRoleUrl, headers = getHeaderArgs)
+					debug(toDebug, "        deleting role: " + roleName + "\n            deleted status: " + str(roleDeleteReq.status_code))
+				else: 
+					debug(toDebug, "        role already found: " + roleName)
+					roleList.remove(roleName)
 
-		# May not need this section - look at status from roleDeleteReq instead to determine if successfully deleted? 
-		getRolesReqAfter = requests.get(getRolesUrl, headers = getHeaderArgs)
-		rolesJsonAfter = json.loads(getRolesReqAfter.text)
-		if rolesJsonAfter["resultCount"] != 0:
-			errorUsers += [(entry, "not all roles deleted")]
-			rolesNotDeleted = [str(role["name"]) for role in rolesJsonAfter["result"]]
-			debug(toDebug, "    not all roles for user " + returnedUsername + " were deleted!\n    roles not deleted: " + str(rolesNotDeleted) + '\n    skipping user ' + returnedUsername)
-			continue
 
-		#Get the _id for each role to be added to a user ]
 		#Note that roles here are stored as 6-character, uppercase "codes" as names, per client requirement
-
+		#Now go an add roles necessary for the user
 
 		patchHeaders = getHeaderArgs
 		patchHeaders.update({'Content-Type':'application/json'})
 
-		addRoleUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) 
-		addRolesList = [{"operation" : "add", "field" : "/roles/-", "value" : {"_ref" : "/managed/role/" + str(rolesToAdd[str(role)]) } } for role in roleList]
-		addRoleReq = requests.patch(addRoleUrlArg, json = addRolesList, headers = patchHeaders)
-		debug(toDebug, "    addRoleReq.status: " + str(addRoleReq.status_code))
+		if len(roleList) > 0:
+			addRoleUrlArg = 'https://sso.qa.valvoline.com/openidm/managed/user/' + str(entry) 
+			addRolesList = [{"operation" : "add", "field" : "/roles/-", "value" : {"_ref" : "/managed/role/" + str(rolesToAdd[str(role)]) } } for role in roleList]
+			addRoleReq = requests.patch(addRoleUrlArg, json = addRolesList, headers = patchHeaders)
 
-		debug(toDebug, "    added roles for user " + str(entry) + "\n")
+			if str(addRoleReq.status_code) != "200":
+				errorUsers += [(entry, "error processing add: " + addRoleReq.text)]
+				debug(toDebug, "    error processing add for user. Continuing... ")
+			else:
+				debug(toDebug, "    addRoleReq.status: " + str(addRoleReq.status_code))
+				debug(toDebug, "    added roles for user " + returnedUsername + "\n" + "    roles added: " + str(roleList) + "\n")
+		else: 
+			debug(toDebug, "    all roles already added for user " + returnedUsername + "\n")
 
 	with open(str(outputFile), 'w') as openOutFile: 
 		openOutFile.write(str(errorUsers))
@@ -212,3 +216,4 @@ def main(argv):
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
+
